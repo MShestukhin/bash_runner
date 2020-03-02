@@ -7,6 +7,7 @@
 #include <QVector>
 #include <QHash>
 #include <QListWidget>
+#include <QCheckBox>
 
 namespace Ui {
 class Widget;
@@ -29,11 +30,14 @@ private slots:
 
     void on_treeWidget_itemChanged(QTreeWidgetItem *item, int column);
 
+    void on_radioButton_2_toggled(bool checked);
+
 private:
-    QHash<QString, QStringList> modulsFromSettings;
+    QHash<QTableWidgetItem * , QStringList> modulsFromSettings;
     QList<QTreeWidgetItem *> treeItemsLogs;
     QList<QString> tableItems;
-    QHash<QString,QTreeWidgetItem*> hashTreeItems;
+    QVector<QCheckBox*> servers;
+    QHash<QTableWidgetItem *,QTreeWidgetItem*> hashTreeItems;
     Ui::Widget *ui;
 };
 

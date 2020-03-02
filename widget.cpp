@@ -20,6 +20,7 @@ Widget::Widget(QWidget *parent) :
     settings->beginGroup("servers");
     for(QString & str : settings->allKeys()){
         QCheckBox * check=new QCheckBox;
+        servers.push_back(check);
         check->setText(str);
         ui->horizontalLayout_servers->addWidget(check);
     }
@@ -43,7 +44,7 @@ Widget::Widget(QWidget *parent) :
         itemTable->setText(str);
         itemTable->setCheckState(Qt::Unchecked);
         ui->tableWidget->setItem(j,i,itemTable);
-        modulsFromSettings.insert(str, settings->value(str).toStringList());
+        modulsFromSettings.insert(itemTable, settings->value(str).toStringList());
         if(i>=4){
             j++;
             i=0;
@@ -69,12 +70,18 @@ Widget::~Widget()
 
 void Widget::on_serversAll_toggled(bool checked)
 {
-
+    for(QCheckBox * chBox : servers){
+        chBox->setChecked(checked);
+    }
 }
 
 void Widget::on_pushButton_clicked()
 {
     qDebug()<<treeItemsLogs.count();
+    if(tableItems.count()==0 && treeItemsLogs.count()==0){
+        ui->textBrowser->append("Не выбран ни один модуль");
+        return;
+    }
     if(treeItemsLogs.count()>0){
         for(QTreeWidgetItem *item : treeItemsLogs){
             qDebug()<<item->parent()->text(0);
@@ -95,18 +102,18 @@ void Widget::on_tableWidget_itemChanged(QTableWidgetItem *itemTable)
         QTreeWidgetItem * item=new QTreeWidgetItem;
         tableItems.append(itemTable->text());
         item->setText(0,itemTable->text());
-        QStringList itemsList=modulsFromSettings.value(itemTable->text());
+        QStringList itemsList=modulsFromSettings.value(itemTable);
         for(QString & str : itemsList){
             QTreeWidgetItem * itemChild=new QTreeWidgetItem;
             itemChild->setText(0,str);
             item->addChild(itemChild);
             itemChild->setCheckState(0,Qt::Unchecked);
         }
-        hashTreeItems.insert(itemTable->text(),item);
+        hashTreeItems.insert(itemTable,item);
         ui->treeWidget->insertTopLevelItem(0,item);
     }
     if(itemTable->checkState()==Qt::Unchecked){
-          QTreeWidgetItem * itemTree=hashTreeItems.take(itemTable->text());
+          QTreeWidgetItem * itemTree=hashTreeItems.take(itemTable);
           ui->treeWidget->setCurrentItem(itemTree);
           if(itemTree){
           for(int i=0;i<itemTree->childCount();i++)
@@ -124,4 +131,21 @@ void Widget::on_treeWidget_itemChanged(QTreeWidgetItem *item, int column)
         treeItemsLogs.append(item);
     if(item->checkState(column)==Qt::Unchecked)
         treeItemsLogs.removeOne(item);
+}
+
+void Widget::on_radioButton_2_toggled(bool checked)
+{
+    qDebug()<<modulsFromSettings.keys().count();
+    for(QTableWidgetItem * it : modulsFromSettings.keys()){
+        if(checked)
+            it->setCheckState(Qt::Checked);
+        else
+            it->setCheckState(Qt::Unchecked);
+    }
+
+//        if(checked)
+//            it->setCheckState(Qt::Checked);
+//        else
+//            it->setCheckState(Qt::Unchecked);
+//    }
 }
