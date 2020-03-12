@@ -3,6 +3,11 @@
 #include <QDebug>
 #include <QSettings>
 #include <QCheckBox>
+#include <QProcess>
+#include <iostream>
+
+//void _log_debug(const template_node_t *render, log_context_t *context, char const *format, ...) __attribute__ ((format(printf, 3, 4)));
+
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget)
@@ -27,9 +32,9 @@ Widget::Widget(QWidget *parent) :
 
     settings->endGroup();
 
-    ui->tableWidget -> setEditTriggers ( QAbstractItemView :: NoEditTriggers);
+    ui->tableWidget->setEditTriggers ( QAbstractItemView :: NoEditTriggers);
     ui->tableWidget->setSelectionMode( QAbstractItemView::NoSelection);
-    ui->tableWidget -> setEditTriggers ( QAbstractItemView :: NoEditTriggers);
+    ui->tableWidget->setEditTriggers ( QAbstractItemView :: NoEditTriggers);
     ui->tableWidget->setSelectionMode( QAbstractItemView::NoSelection);
     ui->tableWidget->setColumnCount(4);
     ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -54,12 +59,12 @@ Widget::Widget(QWidget *parent) :
     }
 
     ui->treeWidget->setColumnCount(1);
-    QTableWidgetItem * itemTable=new QTableWidgetItem;
-    itemTable->setText("rtertwet");
-    itemTable->setCheckState(Qt::Unchecked);
-    QTableWidgetItem * itemTable2=new QTableWidgetItem;
-    itemTable2->setText("rtertwet1");
-    itemTable2->setCheckState(Qt::Unchecked);
+//    QTableWidgetItem * itemTable=new QTableWidgetItem;
+//    itemTable->setText("rtertwet");
+//    itemTable->setCheckState(Qt::Unchecked);
+//    QTableWidgetItem * itemTable2=new QTableWidgetItem;
+//    itemTable2->setText("rtertwet1");
+//    itemTable2->setCheckState(Qt::Unchecked);
 }
 
 Widget::~Widget()
@@ -77,21 +82,42 @@ void Widget::on_serversAll_toggled(bool checked)
 
 void Widget::on_pushButton_clicked()
 {
-    qDebug()<<treeItemsLogs.count();
-    if(tableItems.count()==0 && treeItemsLogs.count()==0){
+        QProcess process;
+        QString servers_str;
+        for(QCheckBox *server : servers){
+            servers_str=servers_str+server->text()+" ";
+        }
+    if(treeItemsLogs.count()==0){
         ui->textBrowser->append("Не выбран ни один модуль");
         return;
     }
     if(treeItemsLogs.count()>0){
         for(QTreeWidgetItem *item : treeItemsLogs){
+
             qDebug()<<item->parent()->text(0);
             qDebug()<<item->text(0);
+            //for s in `echo 172.18.1.15`; do ssh root@${s} "hostname && find /home/clr/roam-nrtrde -follow -name *_20200212*.log -exec cat {} 005C; 2>/dev/null | grep \"ttt\""; done;
+            QString LProc("for s in `echo "+servers_str+"`; do ssh $s 'hostname && find /home/clr/"+item->parent()->text(0)+" -follow -name *"+item->text(0)+"_"+ui->lineEdit_when->text()+"*.log -exec cat {} "+QChar('\\')+"; 2>/dev/null | grep \""+ui->lineEdit_what->text()+"\"'; done;");
+//            QString LProc("for s in `echo "+"172.18.1.15"+"`; do ssh root@{$s} 'hostname && find /home/clr/"+item->parent()->text(0)+" -follow -name *"+item->text(0)+"_"+ui->lineEdit_when->text()+"*.log -exec cat {} "+QChar('\\')+"; 2>/dev/null | grep \""+ui->lineEdit_what->text()+"\"'; done;");
+            ui->textBrowser->append(LProc);
+            process.start("sh", QStringList() << "-c" << LProc);
+            if (!process.waitForStarted()){ //default wait time 30 sec
+                qWarning() << " cannot start process ";
+                ui->textBrowser->append(" cannot start process ");
+            }
+            int waitTime = 60000 ; //60 sec
+            if (!process.waitForFinished(waitTime)){
+                qWarning() << "timeout .. ";
+                ui->textBrowser->append("timeout .. ");
+            }
+            qDebug() << process.readAll();
+            ui->textBrowser->append(process.readAll());
         }
     }
-    else {
-        for(QString & str : tableItems)
-            qDebug()<<str;
-    }
+//    else {
+//        for(QString & str : tableItems)
+//            qDebug()<<str;
+//    }
     ui->textBrowser->show();
 }
 
@@ -100,17 +126,23 @@ void Widget::on_tableWidget_itemChanged(QTableWidgetItem *itemTable)
 {
     if(itemTable->checkState()==Qt::Checked){
         QTreeWidgetItem * item=new QTreeWidgetItem;
-        tableItems.append(itemTable->text());
+        ui->treeWidget->insertTopLevelItem(0,item);
         item->setText(0,itemTable->text());
         QStringList itemsList=modulsFromSettings.value(itemTable);
+        QTreeWidgetItem * parentEmptyCheckbox=new QTreeWidgetItem;
+        item->addChild(parentEmptyCheckbox);
+        parentEmptyCheckbox->setDisabled(true);
+        parentEmptyCheckbox->setText(0,"");
+        parentEmptyCheckbox->setHidden(true);
+        parentEmptyCheckbox->setCheckState(0,Qt::Checked);
         for(QString & str : itemsList){
             QTreeWidgetItem * itemChild=new QTreeWidgetItem;
             itemChild->setText(0,str);
             item->addChild(itemChild);
             itemChild->setCheckState(0,Qt::Unchecked);
         }
+        tableItems.append(itemTable->text());
         hashTreeItems.insert(itemTable,item);
-        ui->treeWidget->insertTopLevelItem(0,item);
     }
     if(itemTable->checkState()==Qt::Unchecked){
           QTreeWidgetItem * itemTree=hashTreeItems.take(itemTable);
@@ -135,7 +167,6 @@ void Widget::on_treeWidget_itemChanged(QTreeWidgetItem *item, int column)
 
 void Widget::on_radioButton_2_toggled(bool checked)
 {
-    qDebug()<<modulsFromSettings.keys().count();
     for(QTableWidgetItem * it : modulsFromSettings.keys()){
         if(checked)
             it->setCheckState(Qt::Checked);

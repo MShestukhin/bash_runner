@@ -8,6 +8,7 @@
 #include <QHash>
 #include <QListWidget>
 #include <QCheckBox>
+#include <QDebug>
 
 namespace Ui {
 class Widget;

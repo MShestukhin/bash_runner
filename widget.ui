@@ -26,7 +26,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit"/>
+        <widget class="QLineEdit" name="lineEdit_what"/>
        </item>
        <item>
         <widget class="QLabel" name="label_2">
@@ -36,7 +36,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit_2">
+        <widget class="QLineEdit" name="lineEdit_when">
          <property name="placeholderText">
           <string>YYYYMMDD</string>
          </property>
